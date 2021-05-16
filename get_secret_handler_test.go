@@ -2,7 +2,7 @@ package main
 
 import (
 	"crypto/md5"
-	"encoding/hex"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,41 +10,52 @@ import (
 )
 
 func TestGetSecretHandler(t *testing.T) {
-	var writer *httptest.ResponseRecorder
-	writer = httptest.NewRecorder()
-
-	reqBody := "{\"plain_text\": \"super secret\"}"
-	request, _ := http.NewRequest("POST", "/", strings.NewReader(reqBody))
-	mux.ServeHTTP(writer, request)
-
-	hasher := md5.New()
-	hasher.Write([]byte("super secret"))
-	hv := hex.EncodeToString(hasher.Sum(nil))
-
-	request = httptest.NewRequest("GET", "/"+hv, strings.NewReader(""))
-	writer = httptest.NewRecorder()
-	mux.ServeHTTP(writer, request)
-
-	expectedResponseBody := "{\"data\":\"super secret\"}"
-
-	if writer.Code != 200 {
-		t.Errorf("Response code is %v", writer.Code)
-	}
-	var resp = string(writer.Body.Bytes())
-	if resp != expectedResponseBody {
-		t.Errorf("Response body is %s", resp)
+	type testConfig struct {
+		requestBody            string
+		requestAction          string
+		expectedHTTPStatusCode int
+		expectedBody           string
 	}
 
-	writer = httptest.NewRecorder()
-	mux.ServeHTTP(writer, request)
-
-	expectedResponseBody = "{\"data\":\"\"}"
-
-	if writer.Code != 404 {
-		t.Errorf("Response code is %v", writer.Code)
+	testCases := []testConfig{
+		testConfig{
+			requestBody:            "{\"plain_text\": \"super secret\"}",
+			requestAction:          "POST",
+			expectedHTTPStatusCode: 200,
+			expectedBody:           fmt.Sprintf("{\"id\":\"%s\"}", fmt.Sprintf("%x", md5.Sum([]byte("super secret")))),
+		},
+		testConfig{
+			requestBody:            fmt.Sprintf("%x", md5.Sum([]byte("super secret"))),
+			requestAction:          "GET",
+			expectedHTTPStatusCode: 200,
+			expectedBody:           "{\"data\":\"super secret\"}",
+		},
+		testConfig{
+			requestBody:            fmt.Sprintf("%x", md5.Sum([]byte("super secret"))),
+			requestAction:          "GET",
+			expectedHTTPStatusCode: 404,
+			expectedBody:           "{\"data\":\"\"}",
+		},
 	}
-	resp = string(writer.Body.Bytes())
-	if resp != expectedResponseBody {
-		t.Errorf("Response body is %s", resp)
+
+	for _, tc := range testCases {
+		var writer *httptest.ResponseRecorder
+		writer = httptest.NewRecorder()
+		var request *http.Request
+		if tc.requestAction == "GET" {
+			request, _ = http.NewRequest("GET", "/"+tc.requestBody, strings.NewReader(""))
+		} else {
+			request, _ = http.NewRequest("POST", "/", strings.NewReader(tc.requestBody))
+		}
+		mux.ServeHTTP(writer, request)
+
+		if writer.Code != tc.expectedHTTPStatusCode {
+			t.Errorf("Response code is %v", writer.Code)
+		}
+
+		resp := string(writer.Body.Bytes())
+		if resp != tc.expectedBody {
+			t.Errorf("Response body is %s", resp)
+		}
 	}
 }

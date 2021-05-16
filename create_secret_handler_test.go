@@ -34,13 +34,13 @@ func TestCreateSecretHandler(t *testing.T) {
 		testConfig{
 			requestBody:            "{\"sometext\": \"test secret\"}",
 			requestAction:          "POST",
-			expectedHTTPStatusCode: 501,
+			expectedHTTPStatusCode: 500,
 			expectedBody:           "Error parsing input\n",
 		},
 		testConfig{
 			requestBody:            "{\"plaintext\": \"test secret\"",
 			requestAction:          "POST",
-			expectedHTTPStatusCode: 501,
+			expectedHTTPStatusCode: 500,
 			expectedBody:           "Error parsing input\n",
 		},
 		testConfig{

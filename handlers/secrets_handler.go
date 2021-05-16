@@ -31,14 +31,14 @@ func secretHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	sv, err := parseInput(r)
 	if err != nil || len(sv) == 0 {
-		w.WriteHeader(501)
+		w.WriteHeader(500)
 		fmt.Fprintln(w, "Error parsing input")
 		return
 	}
 
 	secretId, err := storeSecret(sv)
 	if err != nil {
-		w.WriteHeader(501)
+		w.WriteHeader(500)
 		w.Write([]byte("Error processing secret"))
 		return
 	}
@@ -49,7 +49,7 @@ func secretHandlerPost(w http.ResponseWriter, r *http.Request) {
 	}
 	json, err := json.Marshal(resp)
 	if err != nil {
-		w.WriteHeader(501)
+		w.WriteHeader(500)
 		fmt.Fprintln(w, "Error formatting response")
 		return
 	}
@@ -72,7 +72,7 @@ func secretHandlerGet(w http.ResponseWriter, r *http.Request) {
 	}
 	json, err := json.Marshal(resp)
 	if err != nil {
-		w.WriteHeader(501)
+		w.WriteHeader(500)
 		fmt.Fprintln(w, "Error formatting response")
 		return
 	}
