@@ -5,5 +5,5 @@ import (
 )
 
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("OK"))
+	w.Write([]byte(http.StatusText(http.StatusOK)))
 }

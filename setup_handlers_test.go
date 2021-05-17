@@ -35,7 +35,7 @@ func TestHealthcheck(t *testing.T) {
 		t.Errorf("Response code is %v", writer.Code)
 	}
 	var resp = string(writer.Body.Bytes())
-	if resp != "OK" {
+	if resp != http.StatusText(http.StatusOK) {
 		t.Errorf("Response body is not 'OK'. Received %s", resp)
 	}
 }

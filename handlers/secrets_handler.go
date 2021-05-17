@@ -31,8 +31,8 @@ func secretHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	sv, err := parseInput(r)
 	if err != nil || len(sv) == 0 {
-		w.WriteHeader(500)
-		fmt.Fprintln(w, "Error parsing input")
+		w.WriteHeader(400)
+		w.Write([]byte(http.StatusText(http.StatusBadRequest)))
 		return
 	}
 
