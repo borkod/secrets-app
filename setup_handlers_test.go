@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -20,6 +21,14 @@ func TestMain(m *testing.M) {
 }
 
 func setUp() {
+	os.Setenv("DATA_FILE_PATH", "data.txt")
+	path := os.Getenv("DATA_FILE_PATH")
+	if len(path) == 0 {
+		log.Fatalln("Please set DATA_FILE_PATH environment variable.")
+	}
+	if err := handlers.InitiateSecretHandler(path); err != nil {
+		log.Fatalln(err.Error())
+	}
 	mux = http.NewServeMux()
 	mux.HandleFunc("/healthcheck", handlers.HealthCheckHandler)
 	mux.HandleFunc("/", handlers.SecretHandler)

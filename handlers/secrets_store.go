@@ -3,29 +3,65 @@ package handlers
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"sync"
+
+	"github.com/borkod/secrets-app/fileHandler"
 )
 
-type secrets struct {
+type secretsStore struct {
 	// mu guards the secrets map.
-	mu      sync.Mutex
-	secrets map[string]string
+	mu sync.Mutex
+	// stores secret values
+	secrets      map[string]string
+	dataFileName string
 }
 
-func (s *secrets) AddSecret(v string) string {
+// Adds a secret to the map data structure
+func (s *secretsStore) AddSecret(v string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	jsonData, err := fileHandler.ReadFromFile(s.dataFileName)
+	if err != nil {
+		return "", err
+	}
+	if len(jsonData) != 0 {
+		json.Unmarshal(jsonData, &s.secrets)
+	}
 	hasher := md5.New()
 	hasher.Write([]byte(v))
 	m := hex.EncodeToString(hasher.Sum(nil))
 	s.secrets[m] = v
-	return m
+	jsonData, err = json.Marshal(s.secrets)
+	if err != nil {
+		return "", err
+	}
+	return m, fileHandler.WriteToFile(jsonData, s.dataFileName)
 }
 
-func (s *secrets) GetDeleteSecret(secret string) string {
+// Reads the requested secret value; deletes the secret in the map data structure; returns the secret value
+func (s *secretsStore) GetDeleteSecret(secret string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	val := secretsValues.secrets[secret]
+
+	jsonData, err := fileHandler.ReadFromFile(s.dataFileName)
+	if err != nil {
+		return "", err
+	}
+	if len(jsonData) != 0 {
+		json.Unmarshal(jsonData, &s.secrets)
+	}
+
+	val := ""
+	_, ok := secretsValues.secrets[secret]
+	if ok {
+		val = secretsValues.secrets[secret]
+	}
 	delete(secretsValues.secrets, secret)
-	return val
+	jsonData, err = json.Marshal(s.secrets)
+	if err != nil {
+		return "", err
+	}
+	return val, fileHandler.WriteToFile(jsonData, s.dataFileName)
 }

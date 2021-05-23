@@ -6,10 +6,23 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/borkod/secrets-app/fileHandler"
 )
 
-var secretsValues = secrets{mu: sync.Mutex{}, secrets: make(map[string]string)}
+var secretsValues = secretsStore{mu: sync.Mutex{}, secrets: make(map[string]string), dataFileName: ""}
 
+//
+func InitiateSecretHandler(s string) error {
+	fn, err := fileHandler.CheckCreateFile(s)
+	if err != nil {
+		return err
+	}
+	secretsValues.dataFileName = fn
+	return nil
+}
+
+// SecretHandler processes both GET and POST requests
 func SecretHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -22,6 +35,7 @@ func SecretHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// secretHandlerPost processes POST requests
 func secretHandlerPost(w http.ResponseWriter, r *http.Request) {
 	if r.ContentLength == 0 {
 		w.WriteHeader(400)
@@ -29,6 +43,7 @@ func secretHandlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// parse request input to get value of "plain_text"
 	sv, err := parseInput(r)
 	if err != nil || len(sv) == 0 {
 		w.WriteHeader(400)
@@ -36,13 +51,15 @@ func secretHandlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// store secret value in the map data structure
 	secretId, err := storeSecret(sv)
 	if err != nil {
 		w.WriteHeader(500)
-		w.Write([]byte("Error processing secret"))
+		w.Write([]byte(err.Error()))
 		return
 	}
 
+	// send response back to client
 	w.Header().Set("Content-Type", "application/json")
 	resp := &SecretID{
 		Id: secretId,
@@ -56,14 +73,13 @@ func secretHandlerPost(w http.ResponseWriter, r *http.Request) {
 	w.Write(json)
 }
 
+// secretHandlerGet processes GET requests
 func secretHandlerGet(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	id := strings.TrimPrefix(r.URL.Path, "/")
-	s := ""
-	_, ok := secretsValues.secrets[id]
-	if ok {
-		s = secretsValues.GetDeleteSecret(id)
-	} else {
+	s, err := secretsValues.GetDeleteSecret(id)
+	if s == "" {
 		w.WriteHeader(404)
 	}
 
@@ -80,6 +96,7 @@ func secretHandlerGet(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// parse request input to get value of "plain_text"
 func parseInput(r *http.Request) (string, error) {
 	var c PlainText
 	len := r.ContentLength
@@ -92,6 +109,7 @@ func parseInput(r *http.Request) (string, error) {
 	return c.PlainText, nil
 }
 
+// updates map data structure to store secret value
 func storeSecret(s string) (string, error) {
-	return secretsValues.AddSecret(s), nil
+	return secretsValues.AddSecret(s)
 }

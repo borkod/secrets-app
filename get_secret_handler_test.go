@@ -50,12 +50,12 @@ func TestGetSecretHandler(t *testing.T) {
 		mux.ServeHTTP(writer, request)
 
 		if writer.Code != tc.expectedHTTPStatusCode {
-			t.Errorf("Response code is %v", writer.Code)
+			t.Errorf("Response code is |%v|", writer.Code)
 		}
 
 		resp := string(writer.Body.Bytes())
 		if resp != tc.expectedBody {
-			t.Errorf("Response body is %s", resp)
+			t.Errorf("Response body is |%s|", resp)
 		}
 	}
 }
