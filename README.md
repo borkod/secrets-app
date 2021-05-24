@@ -26,4 +26,4 @@ curl http://localhost:8080/c616584ac64a93aafe1c16b6620f5bcd
 {"data":"My super secret123"}
 ```
 
-The application stores secrets in memory as a map. The key for the map is an md5 hash of the secret text and the value is the secret itself. Mutex is used to lock and unlock the map when it is being manipulated to avoid race conditions.
+The application stores secrets in memory as a map and a file on local disk. The key for the map is an md5 hash of the secret text and the value is the secret itself. Mutex is used to lock and unlock the map and file when it is being manipulated to avoid race conditions. The file location is set using `DATA_FILE_PATH` environment variable.
